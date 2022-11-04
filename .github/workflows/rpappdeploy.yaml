@@ -1,0 +1,36 @@
+name: Deploy to cluster
+
+on:
+  # workflow_dispatch
+  push:
+    branches:
+    - main
+
+env:
+  EKS_CLUSTER: rptestcluster
+  EKS_REGION: us-east-2
+
+jobs:
+ Job1:
+    name: Setup, Build, Push
+    runs-on: ubuntu-latest 
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    # Login to Jfrog
+    - name: Jfrog login
+      env:
+        JFROG_USER: ${{ secrets.JFROG_USER }}
+        JFROG_PASSWORD: ${{ secrets.JFROG_PASSWORD }}
+      run: |
+          docker login sreyo.jfrog.io -u $JFROG_USER -p $JFROG_PASSWORD
+          #kubectl create secret generic jfrog-secret --from-file=.dockerconfigjson=.docker/config.json  --type=kubernetes.io/dockerconfigjson
+          #kubectl create secret generic jfrog-secret --from-file=.dockerconfigjson=/home/runner/.docker/config.json  --type=kubernetes.io/dockerconfigjson
+    
+    # Build the Docker image
+    - name: Build docker image
+      run: |-
+        docker build ./rpapp -t  sreyo.jfrog.io/rptest-docker-rptestcluster-local/rpappimage-docker
+        docker push sreyo.jfrog.io/rptest-docker-rptestcluster-local/rpappimage-docker
